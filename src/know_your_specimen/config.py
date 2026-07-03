@@ -14,8 +14,6 @@ class Config:
         self.image_input_dir = self.get_env_var("IMAGE_INPUT_DIR", "./input_images")
         self.output_dir = self.get_env_var("OUTPUT_DIR", "./output")
         self.debug_mode = self.get_env_var("DEBUG_MODE", "False").lower() == "true"
-        self.model_path = self.get_env_var("MODEL_PATH", "./models/default_model.pth")
-        self.segmentation_threshold = float(self.get_env_var("SEGMENTATION_THRESHOLD", "0.5"))
         self.allowed_extensions = self.get_allowed_extensions()
 
     def get_env_var(self, key: str, default_value: str) -> str:

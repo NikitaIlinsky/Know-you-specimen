@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Project specific
+/input_images
+/output

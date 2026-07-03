@@ -1,19 +1,15 @@
-from src.know_your_specimen.initialization.initialization import InitModule
+from src.know_your_specimen.config import config
+from src.know_your_specimen.initialization.initialization import get_image_paths
 from src.know_your_specimen.segmentation.talk_percentage import process_file
 
 
 def main():
-    # Initialize the image path using the InitModule
-    image_path = InitModule.get_image_path()
-    output_dir = InitModule.get_output_dir()
+    image_dir = config.image_input_dir
+    output_dir = config.output_dir
 
-    process_file(image_path, output_dir)
-
-    if image_path:
-        print(f"Image loaded successfully: {image_path}")
-        # Add your main application logic here
-    else:
-        print("Failed to load image, exiting...")
+    images = get_image_paths(image_dir, config.allowed_extensions)
+    for image_path in images:
+        process_file(image_path, output_dir)
 
 
 if __name__ == "__main__":
