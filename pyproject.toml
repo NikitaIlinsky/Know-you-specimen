@@ -1,0 +1,11 @@
+[project]
+name = "nornikel"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+test = ["pytest>=8.3.3"]
+development = ["pytest>=8.3.3", "black>=24.8.0", "flake8>=7.1.1"]
