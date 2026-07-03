@@ -1,5 +1,5 @@
-from know_your_specimen.initialization import InitModule
-from know_your_specimen.segmentation import process_file
+from src.know_your_specimen.initialization.initialization import InitModule
+from src.know_your_specimen.segmentation.talk_percentage import process_file
 
 
 def main():
