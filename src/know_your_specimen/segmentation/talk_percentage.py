@@ -19,15 +19,22 @@
 это самостоятельная разметка для дальнейшего обучения модели.
 """
 
+import json
+import os
+
 import cv2
 import numpy as np
-import os
-import json
 
 
-def detect_talc(img, very_dark_thresh=15, bright_exclude=100,
-                 density_window=17, density_thresh=0.15,
-                 close_kernel_size=5, min_area_ratio=0.0003):
+def detect_talc(
+    img,
+    very_dark_thresh=15,
+    bright_exclude=100,
+    density_window=17,
+    density_thresh=0.15,
+    close_kernel_size=5,
+    min_area_ratio=0.0003,
+):
     height, width = img.shape[:2]
     total_area = height * width
     min_area = total_area * min_area_ratio
@@ -35,7 +42,7 @@ def detect_talc(img, very_dark_thresh=15, bright_exclude=100,
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
 
     # рудная (светлая) фаза исключается из поиска талька
-    ore_mask = (gray >= bright_exclude)
+    ore_mask = gray >= bright_exclude
     matrix_mask = (~ore_mask).astype(np.uint8)
     matrix_area = matrix_mask.sum()
 
@@ -43,12 +50,14 @@ def detect_talc(img, very_dark_thresh=15, bright_exclude=100,
     very_dark = (gray < very_dark_thresh).astype(np.float32)
     density = cv2.boxFilter(very_dark, -1, (density_window, density_window))
 
-    talc_candidate = ((density > density_thresh).astype(np.uint8) * 255)
+    talc_candidate = (density > density_thresh).astype(np.uint8) * 255
     talc_candidate = cv2.bitwise_and(talc_candidate, talc_candidate, mask=matrix_mask)
 
     # умеренное закрытие — объединяет соседние вкрапления в пятна,
     # но не превращает всё в один сплошной массив
-    close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (close_kernel_size, close_kernel_size))
+    close_kernel = cv2.getStructuringElement(
+        cv2.MORPH_ELLIPSE, (close_kernel_size, close_kernel_size)
+    )
     closed = cv2.morphologyEx(talc_candidate, cv2.MORPH_CLOSE, close_kernel)
     open_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     cleaned = cv2.morphologyEx(closed, cv2.MORPH_OPEN, open_kernel)
@@ -64,13 +73,13 @@ def detect_talc(img, very_dark_thresh=15, bright_exclude=100,
     pct_of_full_image = talc_area / total_area * 100
 
     stats = {
-        'zones_count': len(zones),
-        'talc_area_px': int(talc_area),
-        'matrix_area_px': int(matrix_area),
-        'ore_area_px': int(ore_mask.sum()),
-        'pct_talc_of_matrix': round(pct_of_matrix, 2),
-        'pct_talc_of_full_image': round(pct_of_full_image, 2),
-        'pct_ore_of_full_image': round(ore_mask.sum() / total_area * 100, 2),
+        "zones_count": len(zones),
+        "talc_area_px": int(talc_area),
+        "matrix_area_px": int(matrix_area),
+        "ore_area_px": int(ore_mask.sum()),
+        "pct_talc_of_matrix": round(pct_of_matrix, 2),
+        "pct_talc_of_full_image": round(pct_of_full_image, 2),
+        "pct_ore_of_full_image": round(ore_mask.sum() / total_area * 100, 2),
     }
 
     return zones, final_mask, stats
@@ -123,7 +132,7 @@ def process_file(input_path, output_dir):
 
     cv2.imwrite(result_path, output)
     cv2.imwrite(mask_path, mask)
-    with open(stats_path, 'w', encoding='utf-8') as f:
+    with open(stats_path, "w", encoding="utf-8") as f:
         json.dump(stats, f, ensure_ascii=False, indent=2)
 
     print(f"{base}:")
@@ -134,17 +143,3 @@ def process_file(input_path, output_dir):
     print(f"  сохранено: {result_path}")
 
     return stats
-
-
-def main():
-    import sys
-    if len(sys.argv) < 2:
-        print("Использование: python talc_percentage.py файл.jpg [папка_вывода]")
-        return
-    input_path = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else "./talc_out"
-    process_file(input_path, output_dir)
-
-
-if __name__ == "__main__":
-    main()
