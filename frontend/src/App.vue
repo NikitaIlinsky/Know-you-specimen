@@ -48,7 +48,7 @@
             <!-- Results -->
             <div v-else-if="showResults" class="analysis-card">
               <div ref="reportContent">
-                <!-- Обработанное изображение и результат -->
+                <!-- Обработанное изображение -->
                 <ResultDisplay
                   :processed-image="processedImage"
                   :text-result="textResult"
@@ -98,8 +98,7 @@ import ImageUploader from './components/ImageUploader.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import MetricsTable from './components/MetricsTable.vue'
 
-// Базовый URL API
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default {
   components: {
@@ -113,61 +112,46 @@ export default {
       isLoading: false,
       isDownloading: false,
       error: null,
-      uploadedImage: null,
       processedImage: null,
       textResult: '',
-      metrics: {
-        zonesCount: 0,
-        pctTalcOfMatrix: 0,
-        pctTalcOfFullImage: 0,
-        pctOreOfFullImage: 0,
-        predictedClass: '',
-        classificationHint: '',
-        sensitivity: 0,
-      },
+      metrics: {},
     }
   },
   methods: {
     async handleImageSelected(file) {
       console.log('Выбран файл:', file)
       
-      // Сбрасываем предыдущие результаты и ошибки
       this.showResults = false
       this.error = null
       this.isLoading = true
       
       try {
-        // Создаём FormData для отправки файла
         const formData = new FormData()
         formData.append('file', file)
         
-        // Делаем POST-запрос на API
         const response = await axios.post(`${API_BASE_URL}/api/v1/analyze`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         })
         
-        // Обрабатываем ответ
         const data = response.data
         
-        // Загружаем картинку и конвертируем в base64 для PDF
+        console.log('Полный ответ от API:', data)
+        
+        // Берём combined_overlay
         this.processedImage = await this.imageToBase64(
-          `${API_BASE_URL}${data.artifacts.annotated_image}`
+          `${API_BASE_URL}${data.artifacts.combined_overlay}`
         )
         
-        // Формируем текстовый результат
-        this.textResult = `Класс: ${data.stats.predicted_class} (${data.stats.classification_hint})`
+        // Берём text_conclusion из ответа API
+        this.textResult = data.stats.text_conclusion || ''
         
-        // Маппим метрики из API
+        // Передаём только нужные поля в таблицу
         this.metrics = {
-          zonesCount: data.stats.zones_count,
-          pctTalcOfMatrix: data.stats.pct_talc_of_matrix,
-          pctTalcOfFullImage: data.stats.pct_talc_of_full_image,
-          pctOreOfFullImage: data.stats.pct_ore_of_full_image,
-          predictedClass: data.stats.predicted_class,
-          classificationHint: data.stats.classification_hint,
-          sensitivity: data.stats.sensitivity,
+          predicted_class: data.stats.predicted_class,
+          pct_talc_of_full_image: data.stats.pct_talc_of_full_image,
+          pct_ore_of_full_image: data.stats.pct_ore_of_full_image,
         }
         
         this.showResults = true
@@ -184,7 +168,7 @@ export default {
             this.error = `Ошибка сервера: ${error.response.status} - ${error.response.data.detail || 'Неизвестная ошибка'}`
           }
         } else if (error.request) {
-          this.error = 'Нет соединения с сервером. Проверьте, запущен ли сервер на http://localhost:8000'
+          this.error = 'Нет соединения с сервером. Проверьте, запущен ли сервер'
         } else {
           this.error = `Ошибка: ${error.message}`
         }
@@ -194,7 +178,6 @@ export default {
       }
     },
     
-    // Конвертируем изображение в base64 для корректного отображения в PDF
     async imageToBase64(url) {
       try {
         const response = await fetch(url)
@@ -207,13 +190,12 @@ export default {
         })
       } catch (error) {
         console.error('Ошибка при конвертации изображения:', error)
-        return url // Возвращаем оригинальный URL если не удалось конвертировать
+        return url
       }
     },
     
     clearError() {
       this.error = null
-      this.uploadedImage = null
       this.showResults = false
     },
     
@@ -224,8 +206,6 @@ export default {
       
       try {
         const element = this.$refs.reportContent
-        
-        // Ждём, чтобы картинки точно загрузились
         await this.$nextTick()
         
         const opt = {
@@ -270,7 +250,6 @@ body {
   min-height: 100vh;
 }
 
-/* Header */
 .header {
   background-color: #5882ff;
   padding: 20px 0;
@@ -295,7 +274,6 @@ body {
   color: #1a1a2e;
 }
 
-/* Analysis Section */
 .analysis-section {
   background-color: #fff;
   padding: 80px 0;
@@ -344,7 +322,6 @@ body {
   font-size: 18px;
 }
 
-/* Loading Spinner */
 .spinner {
   width: 50px;
   height: 50px;
@@ -370,14 +347,12 @@ body {
   color: #999;
 }
 
-/* Error */
 .error-message {
   color: #dc3545;
   font-size: 16px;
   margin-bottom: 20px;
 }
 
-/* Download Button */
 .download-section {
   margin-top: auto;
   padding-top: 20px;
@@ -413,7 +388,6 @@ body {
   cursor: not-allowed;
 }
 
-/* Footer */
 .footer {
   background-color: #1a1a2e;
   color: #5882ff;
@@ -425,7 +399,6 @@ body {
   font-size: 14px;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .header-content {
     flex-direction: column;

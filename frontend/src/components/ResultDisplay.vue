@@ -3,8 +3,12 @@
     <div v-if="processedImage" class="result-image mb-4">
       <img :src="processedImage" alt="Обработанное изображение" class="img-fluid" />
     </div>
-    <div v-if="textResult" class="text-result p-3 bg-light rounded-3 border-start border-4 border-success">
+    <div v-if="textResult" class="text-result p-3 bg-light rounded-3 border-start border-4 border-success mb-3">
       <p class="mb-0 fw-semibold">{{ textResult }}</p>
+    </div>
+    <div v-if="textConclusion" class="text-conclusion p-3 bg-light rounded-3 border-start border-4 border-info">
+      <h6 class="fw-bold mb-2">Заключение</h6>
+      <p class="mb-0">{{ textConclusion }}</p>
     </div>
   </div>
 </template>
@@ -14,6 +18,7 @@ export default {
   props: {
     processedImage: String,
     textResult: String,
+    textConclusion: String,
   },
 }
 </script>
@@ -34,7 +39,7 @@ export default {
 }
 
 .result-image img {
-  max-height: 400px;
+  max-height: 100%;
   max-width: 100%;
   object-fit: contain;
   border-radius: 12px;
@@ -44,5 +49,15 @@ export default {
   background: #f8f9fa !important;
   border-color: #5882ff !important;
   border-radius: 8px;
+}
+
+.text-conclusion {
+  background: #f8f9fa !important;
+  border-color: #0dcaf0 !important;
+  border-radius: 8px;
+}
+
+.text-conclusion h6 {
+  color: #1a1a2e;
 }
 </style>
