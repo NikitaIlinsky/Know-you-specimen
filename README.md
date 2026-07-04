@@ -2,6 +2,12 @@
 
 "Know you specimen" — приложение анализа и классификации образцов руды.
 
+## Требования
+
+- **Python** 3.14 или выше
+- **uv** — менеджер пакетов ([установка](https://docs.astral.sh/uv/getting-started/installation/))
+- **Docker** (опционально, для контейнеризации)
+
 ## Установка
 
 ```bash
@@ -153,5 +159,11 @@ src/know_your_specimen/
 test/
 ├── test_main.py          Тесты CLI
 └── test_server.py        Тесты REST API
+frontend/                 Веб-интерфейс (Vite + React)
 pyproject.toml            Зависимости и конфигурация проекта
+pytest.ini                Настройки pytest
+uv.lock                   Зафиксированные версии зависимостей
+.env                      Переменные окружения
+Dockerfile                Сборка Docker-образа
+.dockerignore             Исключения для Docker-контекста
 ```
