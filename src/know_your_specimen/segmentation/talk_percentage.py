@@ -347,7 +347,6 @@ def render_output(img, mask, zones, stats, fill_alpha=0.4):
 
 
 def process_file(input_path, output_dir, config):
-    print(f"--- {input_path} ---")
     img = imread_unicode(input_path)
     if img is None:
         print(f"[!] Не удалось прочитать: {input_path}")
@@ -383,12 +382,6 @@ def process_file(input_path, output_dir, config):
     with open(stats_path, "w", encoding="utf-8") as f:
         json.dump(stats, f, ensure_ascii=False, indent=2)
 
-    print(f"  зон талька найдено:               {stats['zones_count']}")
-    print(f"  % талька от нерудной (силикатной) зоны: {stats['pct_talc_of_matrix']}%")
-    print(f"  % талька от всего кадра:          {stats['pct_talc_of_full_image']}%")
-    print(f"  % рудной фазы от всего кадра:     {stats['pct_ore_of_full_image']}%")
-    print(f"  ПРЕДСКАЗАННЫЙ КЛАСС:              {stats['predicted_class']}")
-    print(f"  предварительный вывод:            {stats['classification_hint']}")
     print(f"  сохранено: {result_path}")
     print()
 
