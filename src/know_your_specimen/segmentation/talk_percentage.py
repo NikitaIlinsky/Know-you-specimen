@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 
@@ -389,68 +388,33 @@ def process_file(input_path, output_dir, params, debug=False):
     return stats
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Детекция талька и расчёт его % содержания.")
-    parser.add_argument("input", help="Путь к файлу изображения ИЛИ к папке с изображениями")
-    parser.add_argument(
-        "--out", default="./talc_out", help="Папка для результатов (по умолчанию ./talc_out)"
-    )
-    parser.add_argument(
-        "--sensitivity",
-        type=float,
-        default=50,
-        help="Чувствительность детектора, 0-100 (по умолчанию 50). "
-        "Больше -> больше площади размечается как тальк, зоны шире и слитнее. "
-        "Меньше -> строже, зоны мельче и их меньше.",
-    )
-    parser.add_argument(
-        "--bright-exclude",
-        type=int,
-        default=100,
-        help="Порог яркости рудной фазы, которая исключается из поиска (по умолчанию 100)",
-    )
-    parser.add_argument(
-        "--density-window",
-        type=int,
-        default=17,
-        help="Размер окна для подсчёта плотности, px (по умолчанию 17)",
-    )
-    parser.add_argument(
-        "--min-area-ratio",
-        type=float,
-        default=0.0003,
-        help="Минимальный размер зоны как доля площади кадра (по умолчанию 0.0003)",
-    )
-    parser.add_argument(
-        "--debug", action="store_true", help="Подробный вывод + сохранить отладочные картинки"
-    )
-
-    args = parser.parse_args()
-
+def main(config):
     params = dict(
-        sensitivity=args.sensitivity,
-        bright_exclude=args.bright_exclude,
-        density_window=args.density_window,
-        min_area_ratio=args.min_area_ratio,
+        sensitivity=config.sensitivity,
+        bright_exclude=config.bright_exclude,
+        density_window=config.density_window,
+        min_area_ratio=config.min_area_ratio,
     )
 
-    if os.path.isdir(args.input):
-        extensions = (".jpg", ".jpeg", ".png", ".bmp", ".tiff")
+    if os.path.isdir(config.image_input_dir):
+        extensions = config.allowed_extensions
         files = []
-        for root, dirs, filenames in os.walk(args.input):
+        for root, dirs, filenames in os.walk(config.image_input_dir):
             for fn in filenames:
-                if fn.lower().endswith(extensions):
+                if fn.lower().endswith(tuple(extensions)):
                     files.append(os.path.join(root, fn))
         files.sort()
         if not files:
-            print(f"[!] В папке {args.input} (и её поддиректориях) не найдено изображений")
+            print(
+                f"[!] В папке {config.image_input_dir} (и её поддиректориях) не найдено изображений"
+            )
             return
         print(f"Найдено {len(files)} изображений (включая поддиректории). Обрабатываю...\n")
 
         class_counts = {}
         errors = 0
         for f in files:
-            stats = process_file(f, args.out, params, debug=args.debug)
+            stats = process_file(f, config.output_dir, params, debug=config.debug_mode)
             if stats is None:
                 errors += 1
             else:
@@ -468,11 +432,13 @@ def main():
             pct = count / (len(files) - errors) * 100 if (len(files) - errors) > 0 else 0
             print(f"  {cls:20s}: {count:4d}  ({pct:.1f}%)")
         print("=" * 60)
-    elif os.path.isfile(args.input):
-        process_file(args.input, args.out, params, debug=args.debug)
+    elif os.path.isfile(config.image_input_dir):
+        process_file(config.image_input_dir, config.output_dir, params, debug=config.debug_mode)
     else:
-        print(f"[!] Путь не найден: {args.input}")
+        print(f"[!] Путь не найден: {config.image_input_dir}")
 
 
 if __name__ == "__main__":
-    main()
+    from know_your_specimen.config import config
+
+    main(config)
