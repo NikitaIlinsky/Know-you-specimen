@@ -60,13 +60,13 @@
               
               <!-- Кнопка скачивания -->
               <div class="download-section mt-4">
-                <button class="btn btn-download w-100" @click="downloadReport">
+                <button class="btn btn-download w-100" @click="downloadReport" :disabled="isDownloading">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: middle;">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                     <polyline points="7 10 12 15 17 10"/>
                     <line x1="12" y1="15" x2="12" y2="3"/>
                   </svg>
-                  Скачать отчёт
+                  {{ isDownloading ? 'Формируем отчёт...' : 'Скачать отчёт' }}
                 </button>
               </div>
             </div>
@@ -111,6 +111,7 @@ export default {
     return {
       showResults: false,
       isLoading: false,
+      isDownloading: false,
       error: null,
       uploadedImage: null,
       processedImage: null,
@@ -150,8 +151,10 @@ export default {
         // Обрабатываем ответ
         const data = response.data
         
-        // Формируем полный URL для обработанной картинки
-        this.processedImage = `${API_BASE_URL}${data.artifacts.annotated_image}`
+        // Загружаем картинку и конвертируем в base64 для PDF
+        this.processedImage = await this.imageToBase64(
+          `${API_BASE_URL}${data.artifacts.annotated_image}`
+        )
         
         // Формируем текстовый результат
         this.textResult = `Класс: ${data.stats.predicted_class} (${data.stats.classification_hint})`
@@ -191,23 +194,60 @@ export default {
       }
     },
     
+    // Конвертируем изображение в base64 для корректного отображения в PDF
+    async imageToBase64(url) {
+      try {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+      } catch (error) {
+        console.error('Ошибка при конвертации изображения:', error)
+        return url // Возвращаем оригинальный URL если не удалось конвертировать
+      }
+    },
+    
     clearError() {
       this.error = null
       this.uploadedImage = null
       this.showResults = false
     },
     
-    downloadReport() {
-      const element = this.$refs.reportContent
-      const opt = {
-        margin: 10,
-        filename: `отчет_анализ_руд_${Date.now()}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      }
+    async downloadReport() {
+      if (this.isDownloading) return
       
-      html2pdf().set(opt).from(element).save()
+      this.isDownloading = true
+      
+      try {
+        const element = this.$refs.reportContent
+        
+        // Ждём, чтобы картинки точно загрузились
+        await this.$nextTick()
+        
+        const opt = {
+          margin: 10,
+          filename: `отчет_анализ_руд_${Date.now()}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { 
+            scale: 2, 
+            useCORS: true,
+            allowTaint: true,
+            logging: false,
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        }
+        
+        await html2pdf().set(opt).from(element).save()
+      } catch (error) {
+        console.error('Ошибка при создании PDF:', error)
+        this.error = 'Не удалось создать PDF. Попробуйте ещё раз.'
+      } finally {
+        this.isDownloading = false
+      }
     },
   },
 }
@@ -358,14 +398,19 @@ body {
   justify-content: center;
 }
 
-.btn-download:hover {
+.btn-download:hover:not(:disabled) {
   background-color: #4a73e6;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(88, 130, 255, 0.3);
 }
 
-.btn-download:active {
+.btn-download:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.btn-download:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 /* Footer */
