@@ -6,6 +6,7 @@
 
 - **Python** 3.14 или выше
 - **uv** — менеджер пакетов ([установка](https://docs.astral.sh/uv/getting-started/installation/))
+- **Node.js + npm** — для сборки веб-интерфейса ([установка](https://nodejs.org/))
 - **Docker** (опционально, для контейнеризации)
 
 ## Установка
@@ -20,6 +21,12 @@ uv sync
 ### CLI — пакетная обработка
 
 Обрабатывает все изображения из `IMAGE_INPUT_DIR` и сохраняет результаты в `OUTPUT_DIR`.
+
+Перед запуском создайте папки `./input_images` и `./output` (или укажите свои пути в `.env`):
+
+```bash
+mkdir -p input_images output
+```
 
 ```bash
 uv run know-your-specimen
