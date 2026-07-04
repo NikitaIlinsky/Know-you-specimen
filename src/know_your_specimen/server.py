@@ -4,12 +4,21 @@ import os
 import uuid
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from src.know_your_specimen.config import config
 from src.know_your_specimen.segmentation.talk_percentage import process_file
 
 app = FastAPI(title="Know Your Specimen API", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")
