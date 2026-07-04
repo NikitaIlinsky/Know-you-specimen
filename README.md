@@ -2,15 +2,32 @@
 
 "Know you specimen" — приложение анализа и классификации образцов руды.
 
-## Установка и запуск
+## Установка
 
 ```bash
 # Установка зависимостей
 uv sync
+```
 
-# Запуск обработки изображений
+## Запуск
+
+### CLI — пакетная обработка
+
+Обрабатывает все изображения из `IMAGE_INPUT_DIR` и сохраняет результаты в `OUTPUT_DIR`.
+
+```bash
 uv run python src/know_your_specimen/main.py
 ```
+
+### REST API сервер
+
+Запускает HTTP-сервер для обработки одного изображения по REST-запросу.
+
+```bash
+uv run uvicorn src.know_your_specimen.server:app --host 0.0.0.0 --port 8000
+```
+
+Сервер поднимается на `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна по адресу `http://localhost:8000/docs`.
 
 ## Конфигурация (.env)
 
@@ -33,6 +50,64 @@ cp .env.example .env
 | `DENSITY_WINDOW`     | `17`                          | Размер окна плотности             |
 | `MIN_AREA_RATIO`     | `0.0003`                      | Минимальная доля площади зоны     |
 
+## REST API
+
+| Endpoint | Method | Описание |
+|---|---|---|
+| `/health` | `GET` | Проверка работоспособности сервера |
+| `/api/v1/analyze` | `POST` | Загрузка изображения, анализ, возврат результатов |
+| `/api/v1/output/{filename}` | `GET` | Скачивание сгенерированного артефакта |
+
+### POST /api/v1/analyze
+
+Принимает изображение в формате `multipart/form-data` (поле `file`).
+Возвращает JSON со статистикой анализа и URL-ами артефактов.
+
+**Пример запроса:**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/analyze \
+  -F "file=@specimen.jpg"
+```
+
+**Пример ответа (200):**
+
+```json
+{
+  "stats": {
+    "zones_count": 5,
+    "pct_talc_of_matrix": 12.4,
+    "pct_talc_of_full_image": 3.1,
+    "pct_ore_of_full_image": 25.0,
+    "predicted_class": "rich",
+    "classification_hint": "высокое содержание",
+    "sensitivity": 50.0
+  },
+  "artifacts": {
+    "annotated_image": "/api/v1/output/a1b2c3d4e5f6_talk.jpg",
+    "mask_image": "/api/v1/output/a1b2c3d4e5f6_talk_mask.png",
+    "stats_json": "/api/v1/output/a1b2c3d4e5f6_talk_stats.json"
+  }
+}
+```
+
+**Коды ответов:**
+
+| Код | Описание |
+|---|---|
+| `200` | Изображение успешно обработано |
+| `422` | Неверный запрос (отсутствует файл, неподдерживаемый формат, битое изображение) |
+| `500` | Внутренняя ошибка обработки |
+
+### GET /api/v1/output/{filename}
+
+Скачивает артефакт, сгенерированный в результате анализа.
+URL для скачивания берётся из поля `artifacts` ответа `POST /api/v1/analyze`.
+
+```bash
+curl -O http://localhost:8000/api/v1/output/a1b2c3d4e5f6_talk.jpg
+```
+
 ## Testing
 
 This project uses pytest for testing. To run the tests:
@@ -50,6 +125,17 @@ uv run pytest -v
 
 ## Project Structure
 
-- `src/` - Source code files
-- `test/` - Test files
-- `pyproject.toml` - Project configuration and dependencies
+```
+src/know_your_specimen/
+├── main.py               CLI — пакетная обработка изображений
+├── server.py             FastAPI — REST API сервер
+├── config.py             Конфигурация (переменные окружения)
+├── classification/       Классификация образцов руды
+├── initialization/       Загрузка и подготовка изображений
+├── report/               Отчёты и сводки
+└── segmentation/         Сегментация и детекция талька
+test/
+├── test_main.py          Тесты CLI
+└── test_server.py        Тесты REST API
+pyproject.toml            Зависимости и конфигурация проекта
+```
