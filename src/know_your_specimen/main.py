@@ -1,10 +1,10 @@
-from src.know_your_specimen.config import config
-from src.know_your_specimen.initialization.initialization import get_image_paths
-from src.know_your_specimen.report.summary_report import (
+from know_your_specimen.config import config
+from know_your_specimen.initialization.initialization import get_image_paths
+from know_your_specimen.report.summary_report import (
     print_segmentation_stats,
     print_summary_report,
 )
-from src.know_your_specimen.segmentation.talk_percentage import process_file
+from know_your_specimen.segmentation.talk_percentage import process_file
 
 
 def main():

@@ -16,7 +16,7 @@ uv sync
 Обрабатывает все изображения из `IMAGE_INPUT_DIR` и сохраняет результаты в `OUTPUT_DIR`.
 
 ```bash
-uv run python src/know_your_specimen/main.py
+uv run know-your-specimen
 ```
 
 ### REST API сервер
@@ -24,7 +24,7 @@ uv run python src/know_your_specimen/main.py
 Запускает HTTP-сервер для обработки одного изображения по REST-запросу.
 
 ```bash
-uv run uvicorn src.know_your_specimen.server:app --host 0.0.0.0 --port 8000
+uv run uvicorn know_your_specimen.server:app --host 0.0.0.0 --port 8000
 ```
 
 Сервер поднимается на `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна по адресу `http://localhost:8000/docs`.

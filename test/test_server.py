@@ -11,11 +11,11 @@ from fastapi.testclient import TestClient
 def client() -> TestClient:
     """Create a TestClient pointed at a temporary output directory."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        from src.know_your_specimen.config import config
+        from know_your_specimen.config import config
 
         config.output_dir = tmpdir
 
-        from src.know_your_specimen.server import app
+        from know_your_specimen.server import app
 
         yield TestClient(app)
 
@@ -74,7 +74,7 @@ class TestAnalyze:
         for url in data["artifacts"].values():
             assert url.startswith("/api/v1/output/")
 
-    @patch("src.know_your_specimen.server.process_file")
+    @patch("know_your_specimen.server.process_file")
     def test_unreadable_image_returns_422(
         self, mock_process, client: TestClient, valid_image_bytes: bytes
     ) -> None:
@@ -86,7 +86,7 @@ class TestAnalyze:
         assert response.status_code == 422
         assert "unreadable" in response.json()["detail"].lower()
 
-    @patch("src.know_your_specimen.server.process_file")
+    @patch("know_your_specimen.server.process_file")
     def test_processing_error_returns_500(
         self, mock_process, client: TestClient, valid_image_bytes: bytes
     ) -> None:

@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "nornikel"
 version = "0.1.0"
@@ -13,6 +17,12 @@ dependencies = [
     "uvicorn>=0.34.0"
 ]
 
+[project.scripts]
+know-your-specimen = "know_your_specimen.main:main"
+
 [dependency-groups]
 test = ["pytest>=8.3.3", "httpx>=0.28.0"]
 development = ["pytest>=8.3.3", "black>=24.8.0", "flake8>=7.1.1"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

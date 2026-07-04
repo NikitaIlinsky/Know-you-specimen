@@ -61,7 +61,7 @@ All tests in `/test/` with `test_*.py` naming: test_main.py (CLI tests), test_se
 pyproject.toml, pytest.ini, uv.lock, .env (python-dotenv), Dockerfile, .dockerignore.
 
 ### 3.4. Scripts and Utilities
-CLI: `uv run python src/know_your_specimen/main.py`. Server: `uv run uvicorn src.know_your_specimen.server:app`. Deps: `uv sync`.
+CLI: `uv run know-your-specimen`. Server: `uv run uvicorn know_your_specimen.server:app`. Deps: `uv sync`.
 
 ---
 
