@@ -15,13 +15,13 @@
       <img v-if="imagePreview" :src="imagePreview" alt="Загруженное изображение" class="img-fluid" />
       <div v-else class="upload-placeholder text-center p-5">
         <button class="btn btn-primary btn-lg px-5">
-          Загрузить панараму...
+          Загрузить изображение
         </button>
         <p class="text-muted mt-3 mb-0">Нажмите кнопку для выбора изображения</p>
       </div>
     </div>
     <button v-if="imagePreview" class="btn btn-outline-secondary w-100" @click="triggerUpload">
-      Загрузить новую панараму
+      Загрузить новое изображение
     </button>
   </div>
 </template>
