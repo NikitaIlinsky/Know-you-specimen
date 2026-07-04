@@ -12,3 +12,4 @@ wheels/
 # Project specific
 /input_images
 /output
+.env
