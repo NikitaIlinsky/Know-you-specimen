@@ -33,14 +33,6 @@
             <td><i class="bi bi-circle-fill text-warning me-2 small"></i>Предсказанный класс</td>
             <td class="text-end fw-bold">{{ metrics.predictedClass }}</td>
           </tr>
-          <tr>
-            <td><i class="bi bi-circle-fill text-secondary me-2 small"></i>Подсказка классификации</td>
-            <td class="text-end fw-bold">{{ metrics.classificationHint }}</td>
-          </tr>
-          <tr>
-            <td><i class="bi bi-circle-fill text-danger me-2 small"></i>Чувствительность</td>
-            <td class="text-end fw-bold">{{ metrics.sensitivity }}%</td>
-          </tr>
         </tbody>
       </table>
     </div>

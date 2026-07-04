@@ -99,7 +99,7 @@ import ResultDisplay from './components/ResultDisplay.vue'
 import MetricsTable from './components/MetricsTable.vue'
 
 // Базовый URL API
-const API_BASE_URL = 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 export default {
   components: {
