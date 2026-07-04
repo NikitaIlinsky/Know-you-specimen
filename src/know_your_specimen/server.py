@@ -6,15 +6,16 @@ import uuid
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
-from src.know_your_specimen.config import config
-from src.know_your_specimen.segmentation.talk_percentage import process_file
+from know_your_specimen.config import config
+from know_your_specimen.segmentation.talk_percentage import process_file
 
 app = FastAPI(title="Know Your Specimen API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "http://localhost:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -92,3 +93,36 @@ async def get_output(filename: str) -> FileResponse:
     if not os.path.isfile(file_path):
         raise HTTPException(status_code=404, detail="File not found.")
     return FileResponse(file_path)
+
+
+# ---------------------------------------------------------------------------
+# Static file serving for the Vue.js frontend (production mode)
+# ---------------------------------------------------------------------------
+
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+_STATIC_DIR = os.path.join(_PROJECT_ROOT, "frontend", "dist")
+
+if os.path.isdir(_STATIC_DIR):
+    # Mount /assets so Vite-built JS/CSS are served correctly
+    assets_dir = os.path.join(_STATIC_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def _favicon() -> FileResponse:
+        """Serve favicon from the Vue build output."""
+        path = os.path.join(_STATIC_DIR, "favicon.ico")
+        if os.path.isfile(path):
+            return FileResponse(path)
+        raise HTTPException(status_code=404)
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def _serve_spa(full_path: str) -> FileResponse:
+        """Catch-all that serves index.html for SPA client-side routing.
+
+        Only reached when no API route matches the path.
+        """
+        index_path = os.path.join(_STATIC_DIR, "index.html")
+        if os.path.isfile(index_path):
+            return FileResponse(index_path)
+        raise HTTPException(status_code=404, detail="Not found")

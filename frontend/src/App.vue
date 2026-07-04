@@ -15,7 +15,7 @@
     <section class="analysis-section">
       <div class="container">
         <h2 class="section-title">АНАЛИЗ РУД</h2>
-        
+
         <div class="row g-4">
           <!-- Left Panel - Upload -->
           <div class="col-lg-6">
@@ -61,11 +61,11 @@
                   :processed-image="processedImage"
                   :text-result="textResult"
                 />
-                
+
                 <!-- Таблица метрик -->
                 <MetricsTable :metrics="metrics" />
               </div>
-              
+
               <!-- Кнопка скачивания -->
               <div class="download-section mt-4">
                 <button class="btn btn-download w-100" @click="downloadReport">
@@ -78,7 +78,7 @@
                 </button>
               </div>
             </div>
-            
+
             <!-- Placeholder when no results -->
             <div v-else class="analysis-card placeholder-card">
               <div class="placeholder-content">
@@ -106,8 +106,8 @@ import ImageUploader from './components/ImageUploader.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import MetricsTable from './components/MetricsTable.vue'
 
-// Базовый URL API
-const API_BASE_URL = 'http://localhost:8000'
+// Базовый URL API: в dev-режиме отдельный сервер, в production — тот же origin
+const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : ''
 
 export default {
   components: {
@@ -137,36 +137,36 @@ export default {
   methods: {
     async handleImageSelected(file) {
       console.log('Выбран файл:', file)
-      
+
       // Показываем загруженное изображение
       this.uploadedImage = URL.createObjectURL(file)
-      
+
       // Сбрасываем предыдущие результаты и ошибки
       this.showResults = false
       this.error = null
       this.isLoading = true
-      
+
       try {
         // Создаём FormData для отправки файла
         const formData = new FormData()
         formData.append('file', file)
-        
+
         // Делаем POST-запрос на API
         const response = await axios.post(`${API_BASE_URL}/api/v1/analyze`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         })
-        
+
         // Обрабатываем ответ
         const data = response.data
-        
+
         // Формируем полный URL для обработанной картинки
         this.processedImage = `${API_BASE_URL}${data.artifacts.annotated_image}`
-        
+
         // Формируем текстовый результат
         this.textResult = `Класс: ${data.stats.predicted_class} (${data.stats.classification_hint})`
-        
+
         // Маппим метрики из API
         this.metrics = {
           zonesCount: data.stats.zones_count,
@@ -177,12 +177,12 @@ export default {
           classificationHint: data.stats.classification_hint,
           sensitivity: data.stats.sensitivity,
         }
-        
+
         this.showResults = true
-        
+
       } catch (error) {
         console.error('Ошибка при загрузке:', error)
-        
+
         if (error.response) {
           // Сервер ответил с ошибкой
           if (error.response.status === 422) {
@@ -199,18 +199,18 @@ export default {
           // Другая ошибка
           this.error = `Ошибка: ${error.message}`
         }
-        
+
       } finally {
         this.isLoading = false
       }
     },
-    
+
     clearError() {
       this.error = null
       this.uploadedImage = null
       this.showResults = false
     },
-    
+
     downloadReport() {
       const element = this.$refs.reportContent
       const opt = {
@@ -220,7 +220,7 @@ export default {
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       }
-      
+
       html2pdf().set(opt).from(element).save()
     },
   },
@@ -430,7 +430,7 @@ body {
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .section-title {
     font-size: 36px;
   }
