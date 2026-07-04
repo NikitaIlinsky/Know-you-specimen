@@ -24,3 +24,7 @@ input_images/
 # Docs (not needed at runtime)
 *.md
 !README.md
+
+# Frontend (built during Docker build)
+frontend/node_modules
+frontend/dist
