@@ -7,7 +7,7 @@ from know_your_specimen.report.summary_report import (
     print_segmentation_stats,
     print_summary_report,
 )
-from know_your_specimen.segmentation.talc_percentage_new import process_file
+from know_your_specimen.segmentation.talc_percentage import process_file
 
 
 def main():
