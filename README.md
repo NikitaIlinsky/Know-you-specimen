@@ -29,6 +29,22 @@ uv run uvicorn src.know_your_specimen.server:app --host 0.0.0.0 --port 8000
 
 Сервер поднимается на `http://localhost:8000`. Интерактивная документация (Swagger UI) доступна по адресу `http://localhost:8000/docs`.
 
+### Docker
+
+```bash
+# Сборка образа
+docker build -t know-your-specimen .
+
+# Запуск контейнера
+docker run -p 8000:8000 know-your-specimen
+```
+
+Сервер будет доступен на `http://localhost:8000`. Папку `output/` можно примонтировать в хост-систему:
+
+```bash
+docker run -p 8000:8000 -v $(pwd)/output:/app/output know-your-specimen
+```
+
 ## Конфигурация (.env)
 
 Скопируйте `.env.example` в `.env` и при необходимости измените значения:

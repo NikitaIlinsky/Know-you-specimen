@@ -1,0 +1,26 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+.venv
+
+# Testing & CI
+.pytest_cache
+.cache
+
+# Project output
+output/
+input_images/
+
+# Environment
+.env
+.env.*
+
+# Git & IDE
+.git
+.gitignore
+.zed
+
+# Docs (not needed at runtime)
+*.md
+!README.md
