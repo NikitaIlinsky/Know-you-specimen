@@ -1,4 +1,3 @@
-import argparse
 import json
 import os
 import pickle
@@ -6,6 +5,7 @@ import pickle
 import cv2
 import numpy as np
 
+from know_your_specimen.config import Config, config
 from know_your_specimen.segmentation.intergrowth_segmentation import (
     build_text_conclusion,
     render_combined_overlay,
@@ -166,7 +166,7 @@ def classify_ore(ore_pct, std_contrast, grain_density_in_ore, median_ore_grain_a
     x = np.array([ore_pct, std_contrast, grain_density_in_ore, median_ore_grain_area])
     x_norm = (x - CLASSIFIER_FEATURE_MEAN) / CLASSIFIER_FEATURE_STD
     dists = {label: np.linalg.norm(x_norm - c) for label, c in CLASSIFIER_CENTROIDS.items()}
-    best_label = min(dists, key=dists.get)
+    best_label = min(dists.items(), key=lambda item: item[1])[0]
     return best_label, dists
 
 
@@ -618,7 +618,7 @@ def render_output(img, mask, zones, stats, fill_alpha=0.4):
     return output
 
 
-def process_file(input_path, output_dir, params, debug=False, max_dimension=4000):
+def process_file(input_path: str, cfg: Config = config):
     print(f"--- {input_path} ---")
     img = imread_unicode(input_path)
     if img is None:
@@ -634,9 +634,9 @@ def process_file(input_path, output_dir, params, debug=False, max_dimension=4000
     # float32-копий кадра по ~0.6 ГБ каждая). Проценты/признаки от даунскейла
     # не искажаются - они везде относительные. Явный --max-dimension всегда
     # можно переопределить; по умолчанию теперь 4000, а не "выключено".
-    if max_dimension is not None and max_dimension > 0:
+    if cfg.max_dimension is not None and cfg.max_dimension > 0:
         h0, w0 = img.shape[:2]
-        scale = max_dimension / max(h0, w0)
+        scale = cfg.max_dimension / max(h0, w0)
         if scale < 1:
             img = cv2.resize(img, (int(w0 * scale), int(h0 * scale)), interpolation=cv2.INTER_AREA)
             print(
@@ -644,10 +644,17 @@ def process_file(input_path, output_dir, params, debug=False, max_dimension=4000
             )
 
     base = os.path.splitext(os.path.basename(input_path))[0]
-    debug_dir = os.path.join(output_dir, "debug") if debug else None
+    debug_dir = os.path.join(cfg.output_dir, "debug") if cfg.debug_mode else None
 
     zones, mask, stats = detect_talc(
-        img, debug=debug, debug_prefix=base, debug_dir=debug_dir, **params
+        img,
+        debug=cfg.debug_mode,
+        debug_prefix=base,
+        debug_dir=debug_dir,
+        sensitivity=cfg.sensitivity,
+        bright_exclude=cfg.bright_exclude,
+        density_window=cfg.density_window,
+        min_area_ratio=cfg.min_area_ratio,
     )
     output = render_output(img, mask, zones, stats)
 
@@ -658,7 +665,7 @@ def process_file(input_path, output_dir, params, debug=False, max_dimension=4000
     # ещё, чтобы не трогать сигнатуру detect_talc(). ---
     gray_for_grains = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
     corrected_for_grains = correct_vignette(gray_for_grains)
-    bright_exclude = params.get("bright_exclude", 100)
+    bright_exclude = cfg.bright_exclude
     ore_mask_raw_u8 = (corrected_for_grains >= bright_exclude).astype(np.uint8) * 255
     ore_close_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (25, 25))
     ore_mask_closed_u8 = cv2.morphologyEx(ore_mask_raw_u8, cv2.MORPH_CLOSE, ore_close_kernel)
@@ -673,13 +680,13 @@ def process_file(input_path, output_dir, params, debug=False, max_dimension=4000
     stats["intergrowth"] = intergrowth_summary
     stats["text_conclusion"] = text_conclusion
 
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(cfg.output_dir, exist_ok=True)
 
-    result_path = os.path.join(output_dir, f"{base}_talk.jpg")
-    mask_path = os.path.join(output_dir, f"{base}_talk_mask.png")
-    stats_path = os.path.join(output_dir, f"{base}_talk_stats.json")
-    intergrowth_mask_path = os.path.join(output_dir, f"{base}_intergrowth_mask.png")
-    combined_path = os.path.join(output_dir, f"{base}_combined_overlay.jpg")
+    result_path = os.path.join(cfg.output_dir, f"{base}_talk.jpg")
+    mask_path = os.path.join(cfg.output_dir, f"{base}_talk_mask.png")
+    stats_path = os.path.join(cfg.output_dir, f"{base}_talk_stats.json")
+    intergrowth_mask_path = os.path.join(cfg.output_dir, f"{base}_intergrowth_mask.png")
+    combined_path = os.path.join(cfg.output_dir, f"{base}_combined_overlay.jpg")
 
     imwrite_unicode(result_path, output, ".jpg")
     imwrite_unicode(mask_path, mask, ".png")
@@ -722,171 +729,3 @@ def true_label_from_path(path):
     if "оталькован" in p or "обогащен" in p:
         return "оталькованная"
     return None
-
-
-def main():
-    parser = argparse.ArgumentParser(description="Детекция талька и расчёт его % содержания.")
-    parser.add_argument("input", help="Путь к файлу изображения ИЛИ к папке с изображениями")
-    parser.add_argument(
-        "--out", default="./talc_out", help="Папка для результатов (по умолчанию ./talc_out)"
-    )
-    parser.add_argument(
-        "--sensitivity",
-        type=float,
-        default=50,
-        help="Чувствительность детектора, 0-100 (по умолчанию 50). "
-        "Больше -> больше площади размечается как тальк, зоны шире и слитнее. "
-        "Меньше -> строже, зоны мельче и их меньше.",
-    )
-    parser.add_argument(
-        "--bright-exclude",
-        type=int,
-        default=100,
-        help="Порог яркости рудной фазы, которая исключается из поиска (по умолчанию 100)",
-    )
-    parser.add_argument(
-        "--density-window",
-        type=int,
-        default=17,
-        help="Размер окна для подсчёта плотности, px (по умолчанию 17)",
-    )
-    parser.add_argument(
-        "--min-area-ratio",
-        type=float,
-        default=0.0003,
-        help="Минимальный размер зоны как доля площади кадра (по умолчанию 0.0003)",
-    )
-    parser.add_argument(
-        "--debug", action="store_true", help="Подробный вывод + сохранить отладочные картинки"
-    )
-    parser.add_argument(
-        "--max-dimension",
-        type=int,
-        default=4000,
-        help="Уменьшить большую панораму перед обработкой до этой макс. стороны "
-        "в px. По умолчанию 4000 - защита от зависания/нехватки памяти на "
-        "огромных панорамах (проверено на 10798x13712: без этого падало по "
-        "памяти или работало часами, с этим - 14.5 секунд). Поставь больше "
-        "или явно укажи 0/оставь как есть, если нужна максимальная точность "
-        "и файлы не гигантские.",
-    )
-
-    args = parser.parse_args()
-
-    params = dict(
-        sensitivity=args.sensitivity,
-        bright_exclude=args.bright_exclude,
-        density_window=args.density_window,
-        min_area_ratio=args.min_area_ratio,
-    )
-
-    if os.path.isdir(args.input):
-        extensions = (".jpg", ".jpeg", ".png", ".bmp", ".tiff")
-        files = []
-        for root, dirs, filenames in os.walk(args.input):
-            for fn in filenames:
-                if fn.lower().endswith(extensions):
-                    files.append(os.path.join(root, fn))
-        files.sort()
-        if not files:
-            print(f"[!] В папке {args.input} (и её поддиректориях) не найдено изображений")
-            return
-        print(f"Найдено {len(files)} изображений (включая поддиректории). Обрабатываю...\n")
-
-        class_counts = {}
-        errors = 0
-        results = []  # (path, predicted_class) - для честной сверки ниже
-        for f in files:
-            stats = process_file(
-                f, args.out, params, debug=args.debug, max_dimension=args.max_dimension
-            )
-            if stats is None:
-                errors += 1
-            else:
-                cls = stats["predicted_class"]
-                class_counts[cls] = class_counts.get(cls, 0) + 1
-                results.append((f, cls))
-
-        print("=" * 60)
-        print("ИТОГОВАЯ СВОДКА (по всем найденным файлам, включая дубли путей)")
-        print("=" * 60)
-        print(f"Всего обработано файлов: {len(files) - errors} из {len(files)}")
-        if errors:
-            print(f"Не удалось прочитать: {errors}")
-        print()
-        for cls, count in sorted(class_counts.items(), key=lambda x: -x[1]):
-            pct = count / (len(files) - errors) * 100 if (len(files) - errors) > 0 else 0
-            print(f"  {cls:20s}: {count:4d}  ({pct:.1f}%)")
-        print("=" * 60)
-
-        # --- ЧЕСТНАЯ ПРОВЕРКА ТОЧНОСТИ ПО ПАПКАМ ---
-        # Важно: predicted_class выше уже посчитан классификатором по
-        # изображению, независимо от пути. Здесь путь используется ТОЛЬКО
-        # чтобы узнать, в какую папку эксперт положил файл (истинный класс),
-        # и сравнить с тем, что предсказал алгоритм. Дедупликация нужна
-        # потому что один и тот же снимок может физически лежать в двух
-        # местах (например, в "Оталькованные руды" и во вложенной
-        # "Оталькованные руды/Области оталькования") - такие дубли
-        # учитываются один раз, иначе точность будет искажена задвоением.
-        dedup = {}
-        for path, pred in results:
-            true = true_label_from_path(path)
-            if true is None:
-                continue  # путь не содержит опознаваемого названия класса - пропускаем в оценке
-            key = (true, win_basename(path))
-            if key not in dedup:
-                dedup[key] = (path, pred)
-
-        if dedup:
-            by_class = {}
-            wrong = []
-            for (true, base), (path, pred) in dedup.items():
-                by_class.setdefault(true, {"total": 0, "correct": 0})
-                by_class[true]["total"] += 1
-                if pred == true:
-                    by_class[true]["correct"] += 1
-                else:
-                    wrong.append((path, true, pred))
-
-            print()
-            print("=" * 60)
-            print("ЧЕСТНАЯ ПРОВЕРКА ТОЧНОСТИ (по названиям папок, дубли путей убраны)")
-            print("=" * 60)
-            print(f"Уникальных размеченных файлов: {len(dedup)}")
-            print()
-            total_all, correct_all = 0, 0
-            for cls, d in sorted(by_class.items()):
-                acc = d["correct"] / d["total"] * 100 if d["total"] else 0
-                print(
-                    f"  {cls:20s}: всего={d['total']:4d}  верно={d['correct']:4d}  неверно={d['total'] - d['correct']:4d}  точность={acc:.1f}%"
-                )
-                total_all += d["total"]
-                correct_all += d["correct"]
-            overall = correct_all / total_all * 100 if total_all else 0
-            print()
-            print(
-                f"  ИТОГО: {correct_all}/{total_all} = {overall:.1f}%  (случайное угадывание для 3 классов = 33.3%)"
-            )
-            print("=" * 60)
-
-            if wrong:
-                print(f"\nСписок файлов с НЕВЕРНЫМ предсказанием ({len(wrong)}):")
-                for path, true, pred in wrong:
-                    print(f"  {win_basename(path):40s} истина={true:18s} предсказано={pred}")
-            print("=" * 60)
-        else:
-            print(
-                "\n[!] Не удалось определить истинный класс ни для одного файла по названиям папок "
-                "- честная сверка точности пропущена. Убедись, что папки называются с ключевыми "
-                "словами 'рядов', 'труднообог', 'оталькован'."
-            )
-    elif os.path.isfile(args.input):
-        process_file(
-            args.input, args.out, params, debug=args.debug, max_dimension=args.max_dimension
-        )
-    else:
-        print(f"[!] Путь не найден: {args.input}")
-
-
-if __name__ == "__main__":
-    main()

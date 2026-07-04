@@ -163,7 +163,3 @@ def main():
         print("СВОДКА ПО РЕЖИМАМ:")
         for mode, count in sorted(mode_counts.items(), key=lambda x: -x[1]):
             print(f"  {mode:12s}: {count}")
-
-
-if __name__ == "__main__":
-    main()

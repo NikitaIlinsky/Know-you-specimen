@@ -321,7 +321,8 @@ def render_output(img, mask, zones, stats, fill_alpha=0.4):
     return output
 
 
-def process_file(input_path, output_dir, config):
+def process_file(input_path, config):
+    output_dir = config.output_dir
     img = imread_unicode(input_path)
     if img is None:
         print(f"[!] Не удалось прочитать: {input_path}")

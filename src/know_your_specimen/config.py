@@ -17,10 +17,11 @@ class Config:
         self.allowed_extensions = self.get_allowed_extensions()
 
         # Talc detection parameters
-        self.sensitivity = float(self.get_env_var("SENSITIVITY", "50"))
+        self.sensitivity = int(self.get_env_var("SENSITIVITY", "50"))
         self.bright_exclude = int(self.get_env_var("BRIGHT_EXCLUDE", "100"))
         self.density_window = int(self.get_env_var("DENSITY_WINDOW", "17"))
         self.min_area_ratio = float(self.get_env_var("MIN_AREA_RATIO", "0.0003"))
+        self.max_dimension = int(self.get_env_var("MAX_DIMENSION", "4000"))
 
     def get_env_var(self, key: str, default_value: str) -> str:
         """Get environment variable with a fallback default value."""

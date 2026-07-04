@@ -61,7 +61,7 @@ async def analyze(file: UploadFile = File(...)) -> dict:
 
     # Run the existing analysis pipeline
     try:
-        stats = process_file(temp_path, config.output_dir, config)
+        stats = process_file(temp_path, config)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Processing failed: {exc}")
     finally:
