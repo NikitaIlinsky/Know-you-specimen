@@ -346,7 +346,7 @@ def render_output(img, mask, zones, stats, fill_alpha=0.4):
     return output
 
 
-def process_file(input_path, output_dir, params, debug=False):
+def process_file(input_path, output_dir, config):
     print(f"--- {input_path} ---")
     img = imread_unicode(input_path)
     if img is None:
@@ -358,10 +358,17 @@ def process_file(input_path, output_dir, params, debug=False):
         return None
 
     base = os.path.splitext(os.path.basename(input_path))[0]
-    debug_dir = os.path.join(output_dir, "debug") if debug else None
+    debug_dir = os.path.join(output_dir, "debug") if config.debug_mode else None
 
     zones, mask, stats = detect_talc(
-        img, debug=debug, debug_prefix=base, debug_dir=debug_dir, **params
+        img,
+        debug=config.debug_mode,
+        debug_prefix=base,
+        debug_dir=debug_dir,
+        sensitivity=config.sensitivity,
+        bright_exclude=config.bright_exclude,
+        density_window=config.density_window,
+        min_area_ratio=config.min_area_ratio,
     )
     output = render_output(img, mask, zones, stats)
 
@@ -386,59 +393,3 @@ def process_file(input_path, output_dir, params, debug=False):
     print()
 
     return stats
-
-
-def main(config):
-    params = dict(
-        sensitivity=config.sensitivity,
-        bright_exclude=config.bright_exclude,
-        density_window=config.density_window,
-        min_area_ratio=config.min_area_ratio,
-    )
-
-    if os.path.isdir(config.image_input_dir):
-        extensions = config.allowed_extensions
-        files = []
-        for root, dirs, filenames in os.walk(config.image_input_dir):
-            for fn in filenames:
-                if fn.lower().endswith(tuple(extensions)):
-                    files.append(os.path.join(root, fn))
-        files.sort()
-        if not files:
-            print(
-                f"[!] В папке {config.image_input_dir} (и её поддиректориях) не найдено изображений"
-            )
-            return
-        print(f"Найдено {len(files)} изображений (включая поддиректории). Обрабатываю...\n")
-
-        class_counts = {}
-        errors = 0
-        for f in files:
-            stats = process_file(f, config.output_dir, params, debug=config.debug_mode)
-            if stats is None:
-                errors += 1
-            else:
-                cls = stats["predicted_class"]
-                class_counts[cls] = class_counts.get(cls, 0) + 1
-
-        print("=" * 60)
-        print("ИТОГОВАЯ СВОДКА")
-        print("=" * 60)
-        print(f"Всего обработано файлов: {len(files) - errors} из {len(files)}")
-        if errors:
-            print(f"Не удалось прочитать: {errors}")
-        print()
-        for cls, count in sorted(class_counts.items(), key=lambda x: -x[1]):
-            pct = count / (len(files) - errors) * 100 if (len(files) - errors) > 0 else 0
-            print(f"  {cls:20s}: {count:4d}  ({pct:.1f}%)")
-        print("=" * 60)
-    elif os.path.isfile(config.image_input_dir):
-        process_file(config.image_input_dir, config.output_dir, params, debug=config.debug_mode)
-    else:
-        print(f"[!] Путь не найден: {config.image_input_dir}")
-
-
-if __name__ == "__main__":
-    from know_your_specimen.config import config
-
-    main(config)
