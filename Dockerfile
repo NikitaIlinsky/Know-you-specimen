@@ -25,7 +25,7 @@ FROM python:3.13-slim
 
 # ---- System dependencies (OpenCV) ----
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,10 +35,16 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 WORKDIR /app
 
 # ---- Dependencies (cached layer) ----
-COPY pyproject.toml uv.lock ./
+# README.md and a src placeholder are needed for setuptools during uv sync.
+# UV_PYTHON_INSTALL_DIR keeps any managed Python inside /app so it is
+# accessible by the non-root user (pyproject.toml requires >=3.14 but
+# the base image provides 3.13).
+ENV UV_PYTHON_INSTALL_DIR=/app/.uv-python
+COPY pyproject.toml uv.lock README.md ./
+RUN mkdir -p src/know_your_specimen && touch src/know_your_specimen/__init__.py
 RUN uv sync --frozen --no-dev
 
-# ---- Application code ----
+# ---- Application code (overwrites placeholder) ----
 COPY src/ ./src/
 
 # ---- Frontend static files (from stage 1) ----
@@ -48,7 +54,7 @@ COPY --from=frontend-builder /frontend/dist/ ./frontend/dist/
 RUN mkdir -p /app/input_images /app/output
 
 # ---- Security: non-root user ----
-RUN useradd --create-home appuser && chown -R appuser:appuser /app
+RUN useradd --create-home appuser && chown -hR appuser:appuser /app
 USER appuser
 
 # Declare runtime data paths as volumes so Docker knows these
