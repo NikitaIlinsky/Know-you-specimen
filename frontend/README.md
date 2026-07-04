@@ -1,44 +1,96 @@
-# my_vue
+# Frontend - Анализ руд Норникель
 
-This template should help get you started developing with Vue 3 in Vite.
+Фронтенд-приложение для автоматической классификации руд по панорамным изображениям полированных шлифов.
 
-## Recommended IDE Setup
+## 📋 Описание
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+Веб-приложение для загрузки изображений шлифов руды, их анализа через API и отображения результатов классификации с возможностью формирования PDF-отчёта.
 
-## Recommended Browser Setup
+## 🛠 Технологии
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+- **Vue.js 3** - прогрессивный JavaScript-фреймворк
+- **Vite** - быстрый сборщик проектов
+- **Bootstrap 5** - CSS-фреймворк для адаптивного дизайна
+- **Axios** - HTTP-клиент для запросов к API
+- **html2pdf.js** - генерация PDF-отчётов
+- **Bootstrap Icons** - иконки
 
-## Customize configuration
+## 📦 Установка
 
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+```bash
+# Установите зависимости
 npm install
 ```
 
-### Compile and Hot-Reload for Development
+## ⚙️ Настройка
 
-```sh
+Приложение настроено на работу с API по адресу `http://localhost:8000`. 
+
+Если ваш API находится по другому адресу, измените константу в `App.vue`:
+
+```javascript
+const API_BASE_URL = 'http://localhost:8000'
+```
+
+## 🚀 Запуск
+
+```bash
+# Запуск в режиме разработки
 npm run dev
-```
 
-### Compile and Minify for Production
-
-```sh
+# Сборка для продакшена
 npm run build
+
+# Предварительный просмотр сборки
+npm run preview
+
+# Форматирование кода
+npm run format
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+## 📁 Структура проекта
 
-```sh
-npm run lint
 ```
+frontend/
+├── public/                 # Статические файлы
+│   └── favicon.ico        # Иконка сайта
+├── src/
+│   ├── components/        # Vue-компоненты
+│   │   ├── ImageUploader.vue    # Компонент загрузки изображений
+│   │   ├── ResultDisplay.vue    # Компонент отображения результатов
+│   │   └── MetricsTable.vue     # Таблица метрик
+│   ├── App.vue            # Главный компонент приложения
+│   └── main.js            # Точка входа
+├── index.html             # HTML-шаблон
+├── package.json           # Зависимости и скрипты
+└── vite.config.js         # Конфигурация Vite
+```
+
+## 🎯 Функциональность
+
+### Загрузка изображения
+- Перетаскивание или выбор файла через диалоговое окно
+- Поддержка форматов изображений
+- Предварительный просмотр загруженного файла
+
+### Анализ
+- Отправка изображения на API для обработки
+- Отображение индикатора загрузки
+- Обработка ошибок
+
+### Результаты
+- **Обработанное изображение** - визуализация с цветовой сегментацией  
+- **Текстовый результат** - классификация руды
+- **Количественные метрики**:
+  - Количество зон
+  - Доля талька в матрице (%)
+  - Доля талька от всего изображения (%)
+  - Доля руды от всего изображения (%)
+  - Предсказанный класс
+  - Подсказка классификации
+  - Чувствительность (%)
+
+### PDF-отчёт
+- Генерация отчёта в формате PDF
+- Включает все результаты анализа
+- Автоматическое скачивание файла
