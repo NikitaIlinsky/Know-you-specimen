@@ -28,4 +28,7 @@ def get_image_paths(image_dir, allowed_extensions) -> List[str]:
             if os.path.isfile(file_path):  # Ensure it's a file, not a subdirectory
                 filtered_files.append(file_path)
 
+    if not filtered_files:
+        print(f"[!] В папке {image_dir} не найдено изображений")
+
     return filtered_files
