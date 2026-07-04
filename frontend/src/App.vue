@@ -15,7 +15,7 @@
     <section class="analysis-section">
       <div class="container">
         <h2 class="section-title">АНАЛИЗ РУД</h2>
-
+        
         <div class="row g-4">
           <!-- Left Panel - Upload -->
           <div class="col-lg-6">
@@ -48,24 +48,16 @@
             <!-- Results -->
             <div v-else-if="showResults" class="analysis-card">
               <div ref="reportContent">
-                <!-- Исходное изображение -->
-                <div class="report-section mb-4">
-                  <h5 class="report-title">Исходное изображение</h5>
-                  <div class="report-image-container">
-                    <img :src="uploadedImage" alt="Исходное изображение" class="report-image" />
-                  </div>
-                </div>
-
                 <!-- Обработанное изображение и результат -->
                 <ResultDisplay
                   :processed-image="processedImage"
                   :text-result="textResult"
                 />
-
+                
                 <!-- Таблица метрик -->
                 <MetricsTable :metrics="metrics" />
               </div>
-
+              
               <!-- Кнопка скачивания -->
               <div class="download-section mt-4">
                 <button class="btn btn-download w-100" @click="downloadReport">
@@ -78,7 +70,7 @@
                 </button>
               </div>
             </div>
-
+            
             <!-- Placeholder when no results -->
             <div v-else class="analysis-card placeholder-card">
               <div class="placeholder-content">
@@ -106,8 +98,8 @@ import ImageUploader from './components/ImageUploader.vue'
 import ResultDisplay from './components/ResultDisplay.vue'
 import MetricsTable from './components/MetricsTable.vue'
 
-// Базовый URL API: в dev-режиме отдельный сервер, в production — тот же origin
-const API_BASE_URL = import.meta.env.DEV ? 'http://localhost:8000' : ''
+// Базовый URL API
+const API_BASE_URL = 'http://localhost:8000'
 
 export default {
   components: {
@@ -137,36 +129,33 @@ export default {
   methods: {
     async handleImageSelected(file) {
       console.log('Выбран файл:', file)
-
-      // Показываем загруженное изображение
-      this.uploadedImage = URL.createObjectURL(file)
-
+      
       // Сбрасываем предыдущие результаты и ошибки
       this.showResults = false
       this.error = null
       this.isLoading = true
-
+      
       try {
         // Создаём FormData для отправки файла
         const formData = new FormData()
         formData.append('file', file)
-
+        
         // Делаем POST-запрос на API
         const response = await axios.post(`${API_BASE_URL}/api/v1/analyze`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         })
-
+        
         // Обрабатываем ответ
         const data = response.data
-
+        
         // Формируем полный URL для обработанной картинки
         this.processedImage = `${API_BASE_URL}${data.artifacts.annotated_image}`
-
+        
         // Формируем текстовый результат
         this.textResult = `Класс: ${data.stats.predicted_class} (${data.stats.classification_hint})`
-
+        
         // Маппим метрики из API
         this.metrics = {
           zonesCount: data.stats.zones_count,
@@ -177,14 +166,13 @@ export default {
           classificationHint: data.stats.classification_hint,
           sensitivity: data.stats.sensitivity,
         }
-
+        
         this.showResults = true
-
+        
       } catch (error) {
         console.error('Ошибка при загрузке:', error)
-
+        
         if (error.response) {
-          // Сервер ответил с ошибкой
           if (error.response.status === 422) {
             this.error = 'Неверный запрос: отсутствует файл, неподдерживаемый формат или битое изображение'
           } else if (error.response.status === 500) {
@@ -193,24 +181,22 @@ export default {
             this.error = `Ошибка сервера: ${error.response.status} - ${error.response.data.detail || 'Неизвестная ошибка'}`
           }
         } else if (error.request) {
-          // Запрос был отправлен, но ответ не получен
           this.error = 'Нет соединения с сервером. Проверьте, запущен ли сервер на http://localhost:8000'
         } else {
-          // Другая ошибка
           this.error = `Ошибка: ${error.message}`
         }
-
+        
       } finally {
         this.isLoading = false
       }
     },
-
+    
     clearError() {
       this.error = null
       this.uploadedImage = null
       this.showResults = false
     },
-
+    
     downloadReport() {
       const element = this.$refs.reportContent
       const opt = {
@@ -220,7 +206,7 @@ export default {
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       }
-
+      
       html2pdf().set(opt).from(element).save()
     },
   },
@@ -351,36 +337,6 @@ body {
   margin-bottom: 20px;
 }
 
-/* Report Section */
-.report-section {
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 20px;
-}
-
-.report-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #1a1a2e;
-  margin-bottom: 16px;
-}
-
-.report-image-container {
-  overflow: hidden;
-  border-radius: 12px;
-  height: 300px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8f9fa;
-}
-
-.report-image {
-  max-height: 100%;
-  max-width: 100%;
-  object-fit: contain;
-  border-radius: 12px;
-}
-
 /* Download Button */
 .download-section {
   margin-top: auto;
@@ -430,7 +386,7 @@ body {
     flex-direction: column;
     gap: 20px;
   }
-
+  
   .section-title {
     font-size: 36px;
   }
