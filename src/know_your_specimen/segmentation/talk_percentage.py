@@ -4,6 +4,8 @@ import os
 import cv2
 import numpy as np
 
+from ..classification.ore_classificatior import classify_ore
+
 
 def imread_unicode(path):
     try:
@@ -96,33 +98,6 @@ def compute_grain_density_in_ore(gray_raw_u8, ore_mask):
     edges = cv2.Canny(gray_raw_u8, 50, 150)
     edges_in_ore = edges[ore_mask] if ore_mask.sum() > 0 else np.array([0])
     return float(edges_in_ore.mean() / 255.0 * 100) if len(edges_in_ore) > 0 else 0.0
-
-
-# Параметры классификатора, обученного (nearest-centroid, z-нормализация)
-# на 30 размеченных примерах (по 10 на класс: рядовая/тальковая/труднообогатимая).
-# LOO-кросс-валидация дала точность 73.3% (22/30) - заметно лучше случайного
-# угадывания (33%). ВАЖНАЯ ОГОВОРКА: отдельная проверка ПРЕДЫДУЩЕЙ версии
-# классификатора (2 признака, обученной на 15 примерах) на большом внешнем
-# датасете из 178 снимков дала только 60.1% - то есть LOO на маленькой
-# выборке обычно завышает реальную точность. Текущая версия использует вдвое
-# больше обучающих данных, что должно улучшить обобщение, но не проверена
-# напрямую на большом внешнем датасете.
-CLASSIFIER_FEATURE_MEAN = np.array([30.756273, 27.771074, 11.025873, 25.366667])
-CLASSIFIER_FEATURE_STD = np.array([22.606224, 7.047225, 7.012449, 6.524229])
-CLASSIFIER_CENTROIDS = {
-    "рядовая": np.array([1.009782, 0.618916, -0.476391, -0.715282]),
-    "труднообогатимая": np.array([-0.730661, -0.683900, 0.407904, 0.817466]),
-    "оталькованная": np.array([-0.279121, 0.064985, 0.068487, -0.102183]),
-}
-
-
-def classify_ore(ore_pct, std_contrast, grain_density_in_ore, median_ore_grain_area):
-    """Nearest-centroid классификация по четырём признакам."""
-    x = np.array([ore_pct, std_contrast, grain_density_in_ore, median_ore_grain_area])
-    x_norm = (x - CLASSIFIER_FEATURE_MEAN) / CLASSIFIER_FEATURE_STD
-    dists = {label: np.linalg.norm(x_norm - c) for label, c in CLASSIFIER_CENTROIDS.items()}
-    best_label = min(dists, key=dists.get)
-    return best_label, dists
 
 
 def detect_background(gray, dark_thresh=40, texture_thresh=3, window=15):
@@ -242,14 +217,14 @@ def detect_talc(
     grain_density_in_ore = compute_grain_density_in_ore(
         gray.astype(np.uint8), ore_mask_for_classifier
     )
-    predicted_class, class_distances = classify_ore(
-        ore_pct_of_full_raw, std_contrast, grain_density_in_ore, median_ore_grain_area
-    )
-
-    if ore_pct_of_full < 15:
-        classification_hint = f"вероятно труднообогатимый (мало рудной фазы, <15% кадра). Классификатор (LOO 73%, n=30): {predicted_class}"
-    else:
-        classification_hint = f"классификатор (LOO n=30: 73%, внешняя проверка на 178 фото предыдущей версии: 60%): {predicted_class}"
+    material_stats = {
+        "ore_pct": ore_pct_of_full_raw,
+        "std_contrast": std_contrast,
+        "grain_density_in_ore": grain_density_in_ore,
+        "median_ore_grain_area": median_ore_grain_area,
+        "ore_pct_of_full": ore_pct_of_full,
+    }
+    predicted_class, class_distances, classification_hint = classify_ore(material_stats)
 
     stats = {
         "zones_count": len(zones),
