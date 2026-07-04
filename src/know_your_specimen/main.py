@@ -1,5 +1,8 @@
 from know_your_specimen.config import config
-from know_your_specimen.initialization.initialization import get_image_paths
+from know_your_specimen.initialization.initialization import (
+    ensure_output_dir,
+    get_image_paths,
+)
 from know_your_specimen.report.summary_report import (
     print_segmentation_stats,
     print_summary_report,
@@ -11,6 +14,8 @@ def main():
     images = get_image_paths(config.image_input_dir, config.allowed_extensions)
     if not images:
         return
+
+    ensure_output_dir(config.output_dir)
 
     print(f"Найдено {len(images)} изображений. Обрабатываю...\n")
 
