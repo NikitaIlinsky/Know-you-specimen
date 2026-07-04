@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from know_your_specimen.config import config
-from know_your_specimen.segmentation.talk_percentage import process_file
+from know_your_specimen.segmentation.talc_percentage import process_file
 
 app = FastAPI(title="Know Your Specimen API", version="0.1.0")
 
@@ -82,6 +82,8 @@ async def analyze(file: UploadFile = File(...)) -> dict:
             "annotated_image": f"/api/v1/output/{base}_talk.jpg",
             "mask_image": f"/api/v1/output/{base}_talk_mask.png",
             "stats_json": f"/api/v1/output/{base}_talk_stats.json",
+            "intergrowth_mask": f"/api/v1/output/{base}_intergrowth_mask.png",
+            "combined_overlay": f"/api/v1/output/{base}_combined_overlay.jpg",
         },
     }
 
