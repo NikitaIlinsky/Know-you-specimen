@@ -21,11 +21,6 @@ try:
 except ImportError:
     SKIMAGE_AVAILABLE = False
 
-_ML_MODEL_CACHE = None
-_ML_MODEL_PATH = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "ore_classifier_model.pkl"
-)
-
 
 def load_ml_model():
     """
@@ -34,19 +29,18 @@ def load_ml_model():
     модели или scikit-image недоступны - возвращает None, и скрипт
     откатывается на старый эвристический классификатор (центроиды).
     """
-    global _ML_MODEL_CACHE
-    if _ML_MODEL_CACHE is not None:
-        return _ML_MODEL_CACHE
-    if not SKIMAGE_AVAILABLE or not os.path.exists(_ML_MODEL_PATH):
-        _ML_MODEL_CACHE = False
+    if config.ml_model_cache is not None:
+        return config.ml_model_cache
+    if not SKIMAGE_AVAILABLE or not os.path.exists(config.ml_model_path):
+        config.ml_model_cache = False
         return False
     try:
-        with open(_ML_MODEL_PATH, "rb") as f:
-            _ML_MODEL_CACHE = pickle.load(f)
-        return _ML_MODEL_CACHE
+        with open(config.ml_model_path, "rb") as f:
+            config.ml_model_cache = pickle.load(f)
+        return config.ml_model_cache
     except Exception as e:
         print(f"  [debug] Не удалось загрузить ML-модель ({e}), использую старый классификатор")
-        _ML_MODEL_CACHE = False
+        config.ml_model_cache = False
         return False
 
 

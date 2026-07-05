@@ -16,6 +16,17 @@ class Config:
         self.debug_mode = self.get_env_var("DEBUG_MODE", "False").lower() == "true"
         self.allowed_extensions = self.get_allowed_extensions()
 
+        # ML model
+        self.ml_model_cache = None
+        self.ml_model_path = self.get_env_var(
+            "ML_MODEL_PATH",
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "segmentation",
+                "ore_classifier_model.pkl",
+            ),
+        )
+
         # Talc detection parameters
         self.sensitivity = int(self.get_env_var("SENSITIVITY", "50"))
         self.bright_exclude = int(self.get_env_var("BRIGHT_EXCLUDE", "100"))
